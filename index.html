@@ -1,0 +1,1004 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OnboardAI - Employee Onboarding Platform</title>
+    <meta name="description" content="AI-powered employee onboarding platform with interactive courses, quizzes, Dart coding assessments, an AI assistant, and document management." />
+    <meta property="og:title" content="OnboardAI - Employee Onboarding Platform" />
+    <meta property="og:description" content="AI-powered employee onboarding platform with interactive courses, quizzes, Dart coding assessments, an AI assistant, and document management." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen">
+
+    <!-- Global Notification Banner Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgot-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="forgot-title">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="forgot-title" class="text-lg font-bold text-slate-900">Reset Your Password</h3>
+          <button type="button" id="btn-close-forgot" class="btn-icon" aria-label="Close modal">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="text-sm text-slate-600 mb-4">Enter your corporate email address. Our HR automation will generate a temporary secure reset token.</p>
+          <div class="form-group mb-4">
+            <label for="reset-email" class="form-label">Corporate Email</label>
+            <input type="email" id="reset-email" class="form-input" placeholder="name@company.com" value="kavin@demo.com" />
+          </div>
+          <div id="reset-status" class="alert-box alert-info hidden"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="btn-cancel-reset" class="btn btn-secondary">Cancel</button>
+          <button type="button" id="btn-submit-reset" class="btn btn-primary">Send Reset Instructions</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- API Config Modal (Allows toggling between Local FastAPI and Live Preview) -->
+    <div id="api-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="text-lg font-bold text-slate-900">Backend API Configuration</h3>
+          <button type="button" id="btn-close-api-modal" class="btn-icon" aria-label="Close modal">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="text-sm text-slate-600 mb-3">OnboardAI connects seamlessly to your Python FastAPI backend or integrated cloud proxy.</p>
+          <div class="form-group mb-3">
+            <label for="config-api-url" class="form-label">API Base URL</label>
+            <input type="text" id="config-api-url" class="form-input font-mono text-sm" placeholder="http://127.0.0.1:8000" />
+            <span class="text-xs text-slate-500 mt-1 block">Default local FastAPI: <code class="font-mono">http://127.0.0.1:8000</code>. Leave empty for relative host.</span>
+          </div>
+          <div class="flex gap-2 mb-2">
+            <button type="button" id="btn-set-local-api" class="btn btn-sm btn-secondary">Use http://127.0.0.1:8000</button>
+            <button type="button" id="btn-set-auto-api" class="btn btn-sm btn-secondary">Auto Detect</button>
+          </div>
+          <div id="api-test-status" class="alert-box alert-info hidden"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="btn-test-api" class="btn btn-secondary">Test Connection</button>
+          <button type="button" id="btn-save-api" class="btn btn-primary">Save & Apply</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================== -->
+    <!-- VIEW 1: AUTHENTICATION / LOGIN VIEW               -->
+    <!-- ================================================== -->
+    <div id="auth-view" class="auth-wrapper min-h-screen flex items-center justify-center p-4">
+      <div class="auth-card">
+        
+        <!-- Brand Header -->
+        <div class="auth-header">
+          <div class="brand-logo-container">
+            <div class="logo-mark">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                <path d="M2 17l10 5 10-5"></path>
+                <path d="M2 12l10 5 10-5"></path>
+              </svg>
+            </div>
+            <span class="brand-title">Onboard<span class="text-indigo-600">AI</span></span>
+          </div>
+          <h1 class="auth-title">Welcome to your onboarding</h1>
+          <p class="auth-subtitle">Sign in to access your orientation curriculum, assessments, and AI coach.</p>
+        </div>
+
+        <!-- Alert messages -->
+        <div id="login-error-alert" class="alert-box alert-error hidden">
+          <span id="login-error-text">Invalid email or password.</span>
+        </div>
+
+        <div id="login-success-alert" class="alert-box alert-success hidden">
+          <span>Login successful! Redirecting to your dashboard...</span>
+        </div>
+
+        <!-- Quick Demo Credentials Hint Bar -->
+        <div class="demo-account-chip">
+          <div class="demo-info">
+            <span class="font-semibold text-slate-800">Demo Account:</span>
+            <span class="font-mono text-slate-600 text-xs">kavin@demo.com · 123456</span>
+          </div>
+          <button type="button" id="btn-autofill-demo" class="btn-text-action">
+            Use Demo Login
+          </button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="login-form" class="auth-form" novalidate>
+          <div class="form-group">
+            <label for="login-email" class="form-label">Corporate Email</label>
+            <div class="input-icon-wrapper">
+              <span class="input-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+              </span>
+              <input 
+                type="email" 
+                id="login-email" 
+                class="form-input with-icon" 
+                placeholder="kavin@demo.com" 
+                required 
+                autocomplete="email"
+                value="kavin@demo.com"
+              />
+            </div>
+            <span id="email-error" class="input-error-msg hidden">Please enter a valid email address.</span>
+          </div>
+
+          <div class="form-group">
+            <div class="flex justify-between items-center mb-1">
+              <label for="login-password" class="form-label mb-0">Password</label>
+              <button type="button" id="btn-forgot-pwd" class="btn-text-link">Forgot password?</button>
+            </div>
+            <div class="input-icon-wrapper">
+              <span class="input-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              </span>
+              <input 
+                type="password" 
+                id="login-password" 
+                class="form-input with-icon with-right-btn" 
+                placeholder="••••••" 
+                required 
+                autocomplete="current-password"
+                value="123456"
+              />
+              <button type="button" id="btn-toggle-password" class="input-right-btn" aria-label="Toggle password visibility">
+                <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <svg id="eye-off-icon" class="hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+              </button>
+            </div>
+            <span id="password-error" class="input-error-msg hidden">Password is required (minimum 6 characters).</span>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <label class="checkbox-container">
+              <input type="checkbox" id="remember-me" checked />
+              <span class="checkbox-custom"></span>
+              <span class="text-sm text-slate-600">Remember this device</span>
+            </label>
+          </div>
+
+          <button type="submit" id="btn-login-submit" class="btn btn-primary btn-block">
+            <span id="login-spinner" class="spinner-sm hidden"></span>
+            <span id="login-btn-text">Sign In to Workspace</span>
+          </button>
+        </form>
+
+        <div class="auth-footer">
+          <span class="text-xs text-slate-400">Enterprise SSO & 2FA Protected · OnboardAI v1.0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================== -->
+    <!-- VIEW 2: MAIN DASHBOARD & APPLICATION WORKSPACE    -->
+    <!-- ================================================== -->
+    <div id="app-workspace" class="workspace-wrapper hidden">
+      
+      <!-- Left Sidebar Navigation -->
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-top">
+          <!-- Logo -->
+          <div class="sidebar-brand">
+            <div class="logo-mark">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                <path d="M2 17l10 5 10-5"></path>
+                <path d="M2 12l10 5 10-5"></path>
+              </svg>
+            </div>
+            <div class="flex flex-col">
+              <span class="font-bold text-white text-lg tracking-tight">Onboard<span class="text-indigo-400">AI</span></span>
+              <span class="text-[10px] text-slate-400 font-medium tracking-wider uppercase">Employee Portal</span>
+            </div>
+          </div>
+
+          <!-- Mobile Close Button -->
+          <button type="button" id="btn-close-sidebar" class="btn-icon text-slate-400 md:hidden" aria-label="Close menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="sidebar-nav">
+          <button type="button" class="nav-item active" data-nav="dashboard">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+            <span>Dashboard</span>
+          </button>
+
+          <button type="button" class="nav-item" data-nav="courses">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            <span>Courses</span>
+          </button>
+
+          <button type="button" class="nav-item" data-nav="assessments">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+            <span>Assessments</span>
+          </button>
+
+          <button type="button" class="nav-item" data-nav="coding">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+            <span>Coding Test</span>
+          </button>
+
+          <button type="button" class="nav-item" data-nav="coach">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            <span>AI Assistant</span>
+          </button>
+
+          <button type="button" class="nav-item" data-nav="documents">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <span>Documents</span>
+          </button>
+        </nav>
+
+        <!-- Sidebar Bottom: User Profile & Controls -->
+        <div class="sidebar-bottom">
+          <!-- Backend Connection Status Indicator -->
+          <button type="button" id="btn-open-api-config" class="api-status-badge" title="Click to configure backend API endpoint">
+            <span class="status-dot"></span>
+            <span id="api-status-label" class="truncate text-xs">FastAPI: Connected</span>
+          </button>
+
+          <div class="user-profile-strip">
+            <div class="user-avatar" id="sidebar-user-avatar">K</div>
+            <div class="user-meta truncate">
+              <span id="sidebar-user-name" class="font-semibold text-white text-sm block truncate">Kavin</span>
+              <span id="sidebar-user-email" class="text-xs text-slate-400 block truncate">kavin@demo.com</span>
+            </div>
+            <button type="button" id="btn-logout" class="btn-icon text-slate-400 hover:text-white" title="Logout">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Mobile Backdrop Overlay -->
+      <div id="sidebar-overlay" class="sidebar-backdrop hidden"></div>
+
+      <!-- Main Content Container -->
+      <main class="main-content">
+        
+        <!-- Top App Bar -->
+        <header class="top-bar">
+          <div class="flex items-center gap-3">
+            <button type="button" id="btn-open-mobile-menu" class="btn-icon md:hidden text-slate-600" aria-label="Open sidebar menu">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <div class="page-header-info">
+              <h2 id="current-view-title" class="text-xl font-bold text-slate-900 tracking-tight">Dashboard</h2>
+              <span id="current-view-subtitle" class="text-xs text-slate-500">Welcome to your onboarding center</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <div class="date-chip hidden sm:flex text-xs text-slate-500 font-medium">
+              <span id="current-date-display">Today</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-secondary" id="btn-quick-coach-top">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+              <span>Ask AI Coach</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Dynamic Content Body -->
+        <div class="page-container">
+
+          <!-- ============================================== -->
+          <!-- SECTION 1: DASHBOARD                           -->
+          <!-- ============================================== -->
+          <section id="section-dashboard" class="content-section">
+            
+            <!-- Hero Welcome Card -->
+            <div class="dashboard-hero">
+              <div class="hero-text">
+                <span class="text-xs font-semibold uppercase tracking-wider text-indigo-200">New Hire Onboarding Track</span>
+                <h2 class="text-2xl sm:text-3xl font-bold text-white mt-1">Welcome back, <span id="dash-welcome-name">Kavin</span>!</h2>
+                <p class="text-indigo-100 text-sm mt-2 max-w-xl">
+                  Complete your orientation requirements, master corporate security, learn Dart programming fundamentals, and pass your compliance assessments.
+                </p>
+              </div>
+              <div class="hero-progress-radial">
+                <div class="radial-circle">
+                  <span id="dash-radial-pct" class="font-extrabold text-2xl text-white">60%</span>
+                  <span class="text-[10px] uppercase font-semibold text-indigo-200 tracking-wider">Completed</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Metric Cards Grid -->
+            <div class="metric-grid">
+              
+              <div class="metric-card">
+                <div class="metric-header">
+                  <span class="metric-title">Overall Progress</span>
+                  <div class="metric-icon bg-indigo-50 text-indigo-600">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+                  </div>
+                </div>
+                <div class="metric-body">
+                  <div class="metric-value" id="dash-overall-pct">60%</div>
+                  <div class="progress-bar-bg mt-2">
+                    <div id="dash-progress-bar" class="progress-bar-fill" style="width: 60%"></div>
+                  </div>
+                </div>
+                <div class="metric-footer">
+                  <span class="text-xs text-slate-500" id="dash-progress-sub">3 of 5 topics certified</span>
+                </div>
+              </div>
+
+              <div class="metric-card">
+                <div class="metric-header">
+                  <span class="metric-title">Completed Courses</span>
+                  <div class="metric-icon bg-emerald-50 text-emerald-600">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                  </div>
+                </div>
+                <div class="metric-body">
+                  <div class="metric-value text-emerald-600" id="dash-completed-count">3</div>
+                  <div class="text-xs text-slate-500 mt-1">Modules certified</div>
+                </div>
+                <div class="metric-footer">
+                  <span class="text-xs text-slate-500"><span id="dash-pending-count" class="font-medium text-slate-700">2</span> pending courses</span>
+                </div>
+              </div>
+
+              <div class="metric-card">
+                <div class="metric-header">
+                  <span class="metric-title">Average Quiz Score</span>
+                  <div class="metric-icon bg-amber-50 text-amber-600">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                  </div>
+                </div>
+                <div class="metric-body">
+                  <div class="metric-value text-amber-600" id="dash-quiz-score">92%</div>
+                  <div class="text-xs text-slate-500 mt-1">Passing standard is 70%</div>
+                </div>
+                <div class="metric-footer">
+                  <span class="text-xs text-emerald-600 font-medium">✓ Passing all completed tests</span>
+                </div>
+              </div>
+
+              <div class="metric-card">
+                <div class="metric-header">
+                  <span class="metric-title">Dart Coding Test</span>
+                  <div class="metric-icon bg-blue-50 text-blue-600">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                  </div>
+                </div>
+                <div class="metric-body">
+                  <div class="metric-value text-blue-600" id="dash-coding-status">Passed</div>
+                  <div class="text-xs text-slate-500 mt-1">Algorithm test suite</div>
+                </div>
+                <div class="metric-footer">
+                  <button type="button" class="btn-text-action text-xs" data-nav="coding">Open Editor →</button>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Quick Access Navigation Cards -->
+            <div class="mt-8">
+              <h3 class="text-base font-bold text-slate-900 mb-4">Quick Access Portals</h3>
+              <div class="quick-access-grid">
+                
+                <div class="quick-card" data-nav="courses">
+                  <div class="quick-card-icon bg-indigo-50 text-indigo-600">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                  </div>
+                  <div class="quick-card-content">
+                    <h4 class="font-bold text-slate-900 text-sm">Course Modules</h4>
+                    <p class="text-xs text-slate-500 mt-0.5">Explore company info, HR policies, security, and Dart.</p>
+                  </div>
+                  <span class="quick-card-arrow">→</span>
+                </div>
+
+                <div class="quick-card" data-nav="assessments">
+                  <div class="quick-card-icon bg-emerald-50 text-emerald-600">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                  </div>
+                  <div class="quick-card-content">
+                    <h4 class="font-bold text-slate-900 text-sm">Assessments & Quizzes</h4>
+                    <p class="text-xs text-slate-500 mt-0.5">Test your retention with instant grading and explanations.</p>
+                  </div>
+                  <span class="quick-card-arrow">→</span>
+                </div>
+
+                <div class="quick-card" data-nav="coding">
+                  <div class="quick-card-icon bg-blue-50 text-blue-600">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                  </div>
+                  <div class="quick-card-content">
+                    <h4 class="font-bold text-slate-900 text-sm">Dart Coding Platform</h4>
+                    <p class="text-xs text-slate-500 mt-0.5">Solve algorithmic problems with safe live test runner.</p>
+                  </div>
+                  <span class="quick-card-arrow">→</span>
+                </div>
+
+                <div class="quick-card" data-nav="coach">
+                  <div class="quick-card-icon bg-purple-50 text-purple-600">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                  </div>
+                  <div class="quick-card-content">
+                    <h4 class="font-bold text-slate-900 text-sm">AI Onboarding Assistant</h4>
+                    <p class="text-xs text-slate-500 mt-0.5">Ask questions about policies, culture, Dart syntax, or privacy.</p>
+                  </div>
+                  <span class="quick-card-arrow">→</span>
+                </div>
+
+                <div class="quick-card" data-nav="documents">
+                  <div class="quick-card-icon bg-rose-50 text-rose-600">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                  </div>
+                  <div class="quick-card-content">
+                    <h4 class="font-bold text-slate-900 text-sm">Document Management</h4>
+                    <p class="text-xs text-slate-500 mt-0.5">Upload and verify required identity and compliance PDF files.</p>
+                  </div>
+                  <span class="quick-card-arrow">→</span>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Recent Activity & Status Overview -->
+            <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+              
+              <!-- Recent Activity List -->
+              <div class="lg:col-span-2 card p-5">
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="font-bold text-slate-900 text-sm">Recent Onboarding Activity</h3>
+                  <button type="button" class="btn-text-action text-xs" id="btn-refresh-progress">Refresh</button>
+                </div>
+                <div id="dash-activity-list" class="space-y-3">
+                  <!-- Dynamically populated -->
+                  <div class="text-xs text-slate-400 py-3 text-center">Loading recent activity...</div>
+                </div>
+              </div>
+
+              <!-- Required Milestones Checklist -->
+              <div class="card p-5">
+                <h3 class="font-bold text-slate-900 text-sm mb-3">Onboarding Milestones</h3>
+                <div class="space-y-3 text-xs" id="dash-milestones-list">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+
+            </div>
+
+          </section>
+
+          <!-- ============================================== -->
+          <!-- SECTION 2: COURSES                             -->
+          <!-- ============================================== -->
+          <section id="section-courses" class="content-section hidden">
+            
+            <div class="section-intro mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h3 class="text-xl font-bold text-slate-900">Curriculum & Learning Modules</h3>
+                <p class="text-xs text-slate-500 mt-1">Master our 5 foundational onboarding domains to complete certification.</p>
+              </div>
+              <!-- Segmented Filter Control (buttons, conforming to design guidelines) -->
+              <div class="segmented-control" role="tablist">
+                <button type="button" class="segment-btn active" data-course-filter="all">All Modules (5)</button>
+                <button type="button" class="segment-btn" data-course-filter="completed">Completed</button>
+                <button type="button" class="segment-btn" data-course-filter="pending">Pending</button>
+              </div>
+            </div>
+
+            <!-- Courses Grid -->
+            <div id="courses-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <!-- Dynamically populated via GET /topics -->
+            </div>
+
+            <!-- Lesson Reader Modal / Detailed Drawer -->
+            <div id="course-reader-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+              <div class="modal-card max-w-4xl max-h-[90vh] flex flex-col">
+                <div class="modal-header shrink-0">
+                  <div class="flex items-center gap-2">
+                    <span id="reader-topic-number" class="text-xs font-semibold text-indigo-600 uppercase tracking-wider">Module</span>
+                    <span class="text-slate-300">·</span>
+                    <h3 id="reader-topic-title" class="text-lg font-bold text-slate-900">Course Title</h3>
+                  </div>
+                  <button type="button" id="btn-close-reader" class="btn-icon" aria-label="Close reader">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                  </button>
+                </div>
+
+                <div class="modal-body overflow-y-auto space-y-6 p-6">
+                  <!-- Course Overview -->
+                  <div class="p-4 bg-slate-100 rounded-lg text-sm text-slate-700 leading-relaxed" id="reader-overview"></div>
+
+                  <!-- Modules List -->
+                  <div id="reader-modules-container" class="space-y-4"></div>
+
+                  <!-- Key Takeaways -->
+                  <div class="takeaways-box">
+                    <h4 class="font-bold text-slate-900 text-sm mb-2 flex items-center gap-2">
+                      <svg width="16" height="16" class="text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                      Key Takeaways & Best Practices
+                    </h4>
+                    <ul id="reader-takeaways-list" class="space-y-1.5 text-xs text-slate-600 list-disc list-inside"></ul>
+                  </div>
+                </div>
+
+                <div class="modal-footer shrink-0 flex items-center justify-between">
+                  <span class="text-xs text-slate-500">Read time ~ 6 mins</span>
+                  <div class="flex gap-2">
+                    <button type="button" id="btn-reader-close-action" class="btn btn-secondary">Close</button>
+                    <button type="button" id="btn-take-quiz-from-reader" class="btn btn-primary">Take Knowledge Quiz →</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </section>
+
+          <!-- ============================================== -->
+          <!-- SECTION 3: ASSESSMENTS / QUIZ                  -->
+          <!-- ============================================== -->
+          <section id="section-assessments" class="content-section hidden">
+            
+            <div class="max-w-3xl mx-auto">
+              <!-- Assessment Header & Topic Picker -->
+              <div class="card p-6 mb-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h3 class="text-lg font-bold text-slate-900">Knowledge Retention Quiz</h3>
+                    <p class="text-xs text-slate-500 mt-1">Select a module below to start or retake your assessment. 70% required to pass.</p>
+                  </div>
+                  <div class="w-full sm:w-64">
+                    <label for="quiz-topic-select" class="form-label text-xs">Selected Course</label>
+                    <select id="quiz-topic-select" class="form-input text-sm py-1.5">
+                      <option value="1">1. Company Introduction</option>
+                      <option value="2">2. HR Policies</option>
+                      <option value="3">3. Cybersecurity</option>
+                      <option value="4">4. Dart Programming</option>
+                      <option value="5">5. Data Privacy</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quiz Interactive Card Container -->
+              <div id="quiz-card-wrapper" class="card p-6">
+                
+                <!-- Quiz Progress Bar & Header -->
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+                  <div>
+                    <span id="quiz-badge-module" class="text-xs font-semibold text-indigo-600 uppercase tracking-wider">Module 1</span>
+                    <h4 id="quiz-active-title" class="text-base font-bold text-slate-900 mt-0.5">Company Introduction</h4>
+                  </div>
+                  <div class="text-right">
+                    <span id="quiz-counter" class="text-xs font-mono font-semibold text-slate-700">Question 1 of 3</span>
+                    <div class="w-24 bg-slate-200 h-1.5 rounded-full mt-1 overflow-hidden">
+                      <div id="quiz-step-progress" class="bg-indigo-600 h-full transition-all duration-300" style="width: 33%"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Active Question Container -->
+                <div id="quiz-question-box" class="space-y-4">
+                  <div id="quiz-question-text" class="text-base font-semibold text-slate-900 leading-snug">
+                    Question text goes here
+                  </div>
+                  <div id="quiz-options-container" class="space-y-2.5 pt-2">
+                    <!-- Dynamic radio options -->
+                  </div>
+                </div>
+
+                <!-- Navigation Controls -->
+                <div class="flex items-center justify-between pt-6 mt-6 border-t border-slate-100">
+                  <button type="button" id="btn-quiz-prev" class="btn btn-secondary btn-sm" disabled>
+                    ← Previous
+                  </button>
+                  <div class="flex gap-2">
+                    <button type="button" id="btn-quiz-next" class="btn btn-primary btn-sm">
+                      Next →
+                    </button>
+                    <button type="button" id="btn-quiz-submit" class="btn btn-primary btn-sm hidden">
+                      <span id="quiz-submit-spinner" class="spinner-sm hidden"></span>
+                      <span>Submit Quiz</span>
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Quiz Results & Review Mode (Hidden by default) -->
+              <div id="quiz-result-view" class="card p-6 hidden">
+                <div class="text-center py-6">
+                  <div id="quiz-result-badge-container" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <span id="quiz-result-icon">✓</span>
+                  </div>
+                  <h3 id="quiz-result-title" class="text-2xl font-bold text-slate-900">Quiz Completed!</h3>
+                  <p id="quiz-result-msg" class="text-sm text-slate-600 mt-1">You achieved an 80% score.</p>
+                  
+                  <div class="flex justify-center items-center gap-6 mt-4 py-3 bg-slate-50 rounded-lg max-w-sm mx-auto">
+                    <div>
+                      <span class="text-xs text-slate-500 block">Final Score</span>
+                      <span id="quiz-result-score" class="text-xl font-bold text-slate-900">80%</span>
+                    </div>
+                    <div class="h-8 w-px bg-slate-200"></div>
+                    <div>
+                      <span class="text-xs text-slate-500 block">Status</span>
+                      <span id="quiz-result-status" class="text-xl font-bold text-emerald-600">PASSED</span>
+                    </div>
+                  </div>
+
+                  <div class="flex justify-center gap-3 mt-6">
+                    <button type="button" id="btn-retry-quiz" class="btn btn-secondary">
+                      Retry Quiz
+                    </button>
+                    <button type="button" id="btn-continue-to-courses" class="btn btn-primary">
+                      Next Module →
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Answer Review Section -->
+                <div class="mt-8 border-t border-slate-200 pt-6">
+                  <h4 class="font-bold text-slate-900 text-sm mb-4">Detailed Question Review & Explanations</h4>
+                  <div id="quiz-review-list" class="space-y-4"></div>
+                </div>
+              </div>
+
+            </div>
+
+          </section>
+
+          <!-- ============================================== -->
+          <!-- SECTION 4: DART CODING TEST                    -->
+          <!-- ============================================== -->
+          <section id="section-coding" class="content-section hidden">
+            
+            <div class="coding-platform-container">
+              
+              <!-- Left Pane: Problem Description & Requirements -->
+              <div class="coding-problem-pane card p-5">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div class="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                    <span>Dart 3.x Assessment</span>
+                    <span>·</span>
+                    <span class="text-indigo-600 font-bold">Algorithms</span>
+                  </div>
+                  <span class="text-xs font-medium text-emerald-600">Standard Test</span>
+                </div>
+
+                <div class="py-4">
+                  <h3 class="text-lg font-bold text-slate-900">Sum of First N Natural Numbers</h3>
+                  <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+                    Write an efficient Dart program that calculates the sum of all natural numbers from <code class="font-mono text-xs bg-slate-100 px-1 py-0.5 rounded">1</code> up to <code class="font-mono text-xs bg-slate-100 px-1 py-0.5 rounded">N</code> (inclusive).
+                  </p>
+
+                  <div class="mt-4 p-3 bg-slate-100 rounded-lg text-xs space-y-2">
+                    <div>
+                      <span class="font-semibold text-slate-700">Formula Hint:</span>
+                      <span class="font-mono text-slate-600 block mt-0.5">Sum = 1 + 2 + 3 + ... + N = (N * (N + 1)) ~/ 2</span>
+                    </div>
+                  </div>
+
+                  <!-- Examples -->
+                  <div class="mt-4 space-y-3">
+                    <div>
+                      <span class="text-xs font-bold text-slate-700 block">Example 1:</span>
+                      <div class="bg-slate-900 text-slate-200 font-mono text-xs p-2.5 rounded mt-1">
+                        <div>Input: 5</div>
+                        <div>Expected Output: 15</div>
+                        <div class="text-slate-400 text-[11px] mt-0.5">// Explanation: 1 + 2 + 3 + 4 + 5 = 15</div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span class="text-xs font-bold text-slate-700 block">Example 2:</span>
+                      <div class="bg-slate-900 text-slate-200 font-mono text-xs p-2.5 rounded mt-1">
+                        <div>Input: 10</div>
+                        <div>Expected Output: 55</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Constraints -->
+                  <div class="mt-4">
+                    <span class="text-xs font-bold text-slate-700 block mb-1">Constraints:</span>
+                    <ul class="text-xs text-slate-600 space-y-1 list-disc list-inside">
+                      <li>0 ≤ N ≤ 10,000</li>
+                      <li>Output integer sum result</li>
+                      <li>Execution must be deterministic and safe</li>
+                    </ul>
+                  </div>
+
+                  <!-- Test History -->
+                  <div class="mt-6 border-t border-slate-100 pt-4">
+                    <h4 class="text-xs font-bold text-slate-700 mb-2">Previous Attempts History</h4>
+                    <div id="coding-history-list" class="space-y-1.5 text-xs">
+                      <div class="text-slate-400">Loading attempts...</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right Pane: Code Editor & Execution Terminal -->
+              <div class="coding-editor-pane">
+                
+                <!-- Editor Toolbar -->
+                <div class="editor-toolbar">
+                  <div class="flex items-center gap-2">
+                    <span class="file-tab">solution.dart</span>
+                    <span class="text-xs text-slate-400 font-mono">UTF-8</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button type="button" id="btn-reset-code" class="btn btn-sm btn-secondary" title="Reset to template">
+                      Reset
+                    </button>
+                    <button type="button" id="btn-run-code" class="btn btn-sm btn-secondary">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                      <span>Run</span>
+                    </button>
+                    <button type="button" id="btn-submit-coding" class="btn btn-sm btn-primary">
+                      <span id="coding-spinner" class="spinner-sm hidden"></span>
+                      <span>Submit Test</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Interactive Code Area -->
+                <div class="editor-container">
+                  <div class="line-numbers" id="editor-line-numbers">
+                    1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>11<br>12<br>13<br>14
+                  </div>
+                  <textarea id="dart-code-input" class="code-textarea" spellcheck="false">// Dart Onboarding Assessment: Sum of First N Numbers
+// Write your solution below:
+
+int sumOfNumbers(int n) {
+  int total = 0;
+  for (int i = 1; i <= n; i++) {
+    total += i;
+  }
+  return total;
+}
+
+void main() {
+  int n = 5;
+  int result = sumOfNumbers(n);
+  print(result);
+}</textarea>
+                </div>
+
+                <!-- Custom Test Input Bar -->
+                <div class="custom-input-bar">
+                  <div class="flex items-center gap-3">
+                    <label for="dart-test-input" class="text-xs font-medium text-slate-600">Custom Input (N):</label>
+                    <input type="number" id="dart-test-input" class="form-input text-xs font-mono py-1 w-24" value="5" min="0" max="10000" />
+                    <span class="text-[11px] text-slate-400">Click Run to test against your custom input</span>
+                  </div>
+                </div>
+
+                <!-- Terminal / Output Console -->
+                <div class="terminal-window">
+                  <div class="terminal-header">
+                    <div class="terminal-dots">
+                      <span class="dot bg-rose-500"></span>
+                      <span class="dot bg-amber-500"></span>
+                      <span class="dot bg-emerald-500"></span>
+                    </div>
+                    <span class="terminal-title">Terminal Console Output</span>
+                    <button type="button" id="btn-clear-console" class="text-[10px] text-slate-400 hover:text-white">Clear</button>
+                  </div>
+                  <div class="terminal-body" id="terminal-output">
+$ dart run solution.dart --input=5
+[Compiling Dart AST]
+Execution Successful (18ms)
+Output:
+15
+Test Case 1 (N = 5): PASSED [Expected: 15, Got: 15]
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+          </section>
+
+          <!-- ============================================== -->
+          <!-- SECTION 5: AI ASSISTANT                        -->
+          <!-- ============================================== -->
+          <section id="section-coach" class="content-section hidden">
+            
+            <div class="chat-container max-w-4xl mx-auto card overflow-hidden flex flex-col h-[75vh]">
+              
+              <!-- Chat Header -->
+              <div class="chat-header p-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                    AI
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-slate-900 text-sm">Onboarding AI Coach</h3>
+                    <span class="text-xs text-slate-500 flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      Trained on Company Wiki, HR Policies & Dart
+                    </span>
+                  </div>
+                </div>
+                <button type="button" id="btn-clear-chat" class="btn btn-sm btn-secondary text-xs">
+                  Clear Conversation
+                </button>
+              </div>
+
+              <!-- Quick Question Chips -->
+              <div class="quick-questions-strip p-3 bg-slate-50 border-b border-slate-100 flex gap-2 overflow-x-auto shrink-0">
+                <span class="text-xs font-semibold text-slate-500 self-center whitespace-nowrap">Suggested:</span>
+                <button type="button" class="btn-prompt-chip" data-prompt="What is Dart?">What is Dart?</button>
+                <button type="button" class="btn-prompt-chip" data-prompt="What is phishing?">What is phishing?</button>
+                <button type="button" class="btn-prompt-chip" data-prompt="What is the HR policy?">What is the HR policy?</button>
+                <button type="button" class="btn-prompt-chip" data-prompt="What is data privacy?">What is data privacy?</button>
+                <button type="button" class="btn-prompt-chip" data-prompt="What is the company culture?">What is the company culture?</button>
+              </div>
+
+              <!-- Message History Scroll Area -->
+              <div id="chat-messages-container" class="chat-messages p-4 flex-1 overflow-y-auto space-y-4">
+                
+                <!-- Initial Welcome AI Message -->
+                <div class="message-bubble-wrapper ai-wrapper">
+                  <div class="message-avatar">AI</div>
+                  <div class="message-content ai-bubble">
+                    <p class="text-sm text-slate-800">
+                      Hello Kavin! I'm your dedicated <strong>OnboardAI Assistant</strong>. I'm here to help you get up to speed with company policies, cybersecurity procedures, Dart programming guidelines, and data compliance rules. 
+                    </p>
+                    <p class="text-sm text-slate-800 mt-2">
+                      Feel free to click any of the suggested topics above or ask any question you have during your onboarding!
+                    </p>
+                    <span class="message-time">Just now</span>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Typing Indicator -->
+              <div id="ai-typing-indicator" class="chat-typing-indicator px-4 py-2 text-xs text-slate-400 italic hidden shrink-0">
+                AI Coach is thinking...
+              </div>
+
+              <!-- Input Bar -->
+              <div class="chat-input-bar p-3 border-t border-slate-100 bg-white shrink-0">
+                <form id="chat-form" class="flex gap-2">
+                  <input 
+                    type="text" 
+                    id="chat-input" 
+                    class="form-input text-sm flex-1" 
+                    placeholder="Ask a question about HR, security, Dart syntax, or privacy..." 
+                    autocomplete="off"
+                    required
+                  />
+                  <button type="submit" id="btn-chat-send" class="btn btn-primary px-5">
+                    <span id="chat-send-spinner" class="spinner-sm hidden"></span>
+                    <span>Send</span>
+                  </button>
+                </form>
+              </div>
+
+            </div>
+
+          </section>
+
+          <!-- ============================================== -->
+          <!-- SECTION 6: DOCUMENTS                           -->
+          <!-- ============================================== -->
+          <section id="section-documents" class="content-section hidden">
+            
+            <div class="max-w-4xl mx-auto space-y-6">
+              
+              <!-- Upload Header & Zone -->
+              <div class="card p-6">
+                <h3 class="text-lg font-bold text-slate-900">Document Management & Compliance Verification</h3>
+                <p class="text-xs text-slate-500 mt-1 mb-6">
+                  Please upload your signed onboarding documents, identity proof, and non-disclosure agreement in PDF format.
+                </p>
+
+                <!-- Drag and Drop Dropzone -->
+                <div id="dropzone" class="dropzone-area">
+                  <input type="file" id="pdf-file-input" accept="application/pdf,.pdf" class="hidden" />
+                  <div class="dropzone-icon">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                      <line x1="12" y1="18" x2="12" y2="12"></line>
+                      <line x1="9" y1="15" x2="15" y2="15"></line>
+                    </svg>
+                  </div>
+                  <h4 class="text-sm font-bold text-slate-800 mt-2">Select or drag & drop PDF files here</h4>
+                  <p class="text-xs text-slate-500 mt-1">Accepts PDF documents only (Max size: 10 MB)</p>
+                  <button type="button" id="btn-browse-file" class="btn btn-secondary btn-sm mt-3">
+                    Browse File from Computer
+                  </button>
+                </div>
+
+                <!-- Selected File Preview Bar (Appears when file chosen) -->
+                <div id="selected-file-bar" class="file-preview-strip hidden mt-4">
+                  <div class="flex items-center gap-3">
+                    <div class="file-type-badge">PDF</div>
+                    <div>
+                      <span id="selected-file-name" class="text-sm font-semibold text-slate-800 block truncate">document.pdf</span>
+                      <span id="selected-file-size" class="text-xs text-slate-500">1.2 MB</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button type="button" id="btn-cancel-file" class="btn btn-sm btn-secondary">Remove</button>
+                    <button type="button" id="btn-upload-file" class="btn btn-sm btn-primary">
+                      <span id="upload-spinner" class="spinner-sm hidden"></span>
+                      <span>Upload Document</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Upload Progress Indicator -->
+                <div id="upload-progress-box" class="mt-4 hidden">
+                  <div class="flex justify-between text-xs text-slate-600 mb-1">
+                    <span>Uploading document to secure repository...</span>
+                    <span id="upload-pct">75%</span>
+                  </div>
+                  <div class="progress-bar-bg">
+                    <div id="upload-bar-fill" class="progress-bar-fill" style="width: 75%"></div>
+                  </div>
+                </div>
+
+                <!-- Upload Status Notifications -->
+                <div id="upload-status-alert" class="alert-box alert-success hidden mt-4"></div>
+              </div>
+
+              <!-- Uploaded Documents Repository Table -->
+              <div class="card p-6">
+                <div class="flex items-center justify-between mb-4">
+                  <h4 class="text-base font-bold text-slate-900">Your Submitted Documents</h4>
+                  <button type="button" id="btn-refresh-docs" class="btn-text-action text-xs">Refresh</button>
+                </div>
+
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left border-collapse">
+                    <thead>
+                      <tr class="border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                        <th class="py-3 px-4">Document Name</th>
+                        <th class="py-3 px-4">Format</th>
+                        <th class="py-3 px-4">Upload Timestamp</th>
+                        <th class="py-3 px-4">Security Status</th>
+                        <th class="py-3 px-4 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="documents-table-body" class="text-xs divide-y divide-slate-100">
+                      <tr>
+                        <td colspan="5" class="py-6 text-center text-slate-400">Loading document registry...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+
+          </section>
+
+        </div>
+      </main>
+
+    </div>
+
+    <!-- Application Script -->
+    <script type="module" src="/script.js"></script>
+  </body>
+</html>
